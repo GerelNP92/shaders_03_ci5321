@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bloom - Serafin en Neon</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #07040c;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    /* Panel flotante con controles */
+    #panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 340px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(10, 8, 18, 0.84);
+      color: #f2f2f2;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(8px);
+      z-index: 20;
+    }
+
+    #panel h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    #panel p {
+      margin: 0 0 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #d8d8e3;
+    }
+
+    .control {
+      margin-bottom: 10px;
+    }
+
+    .control label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .control input[type="range"] {
+      width: 100%;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .row label {
+      font-size: 13px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #ffffff;
+      color: #111111;
+    }
+
+    #stateText {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #d8e9ff;
+    }
+
+    #help {
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #bbc6d8;
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="panel">
+    <h2>Bloom - Serafin en Neón </h2>
+    <p>
+      Se muestra un ser hecho de plastilina llamado Serafin (Sera para los amigos) al cual le caen 
+      2 cuchillos en sus plastilinosos ojos en los cuales dibuja justamente 2 ojos para intentar 
+      disimular que ya no los tiene. Todo esto mostrado en un estilo de nuces de neon como los 
+      que se ven en las tiendas usando bloom.  
+    </p>
+
+    <div class="control">
+      <label>
+        <span>Dispersión</span>
+        <span id="dispersionValue">1.90</span>
+      </label>
+      <input id="dispersion" type="range" min="0.30" max="5.50" step="0.01" value="1.90" />
+    </div>
+
+    <div class="control">
+      <label>
+        <span>Umbral de Brillo</span>
+        <span id="thresholdValue">0.48</span>
+      </label>
+      <input id="threshold" type="range" min="0.00" max="1.00" step="0.01" value="0.48" />
+    </div>
+
+    <div class="control">
+      <label>
+        <span>Intensidad</span>
+        <span id="intensityValue">1.90</span>
+      </label>
+      <input id="intensity" type="range" min="0.00" max="4.00" step="0.01" value="1.90" />
+    </div>
+
+    <div class="control">
+      <label>
+        <span>Exposicion</span>
+        <span id="exposureValue">1.10</span>
+      </label>
+      <input id="exposure" type="range" min="0.40" max="2.60" step="0.01" value="1.10" />
+    </div>
+
+    <div class="control">
+      <label>
+        <span>Velocidad de cambio</span>
+        <span id="switchSpeedValue">1.60</span>
+      </label>
+      <input id="switchSpeed" type="range" min="0.20" max="5.00" step="0.01" value="1.60" />
+    </div>
+
+    <div class="row">
+      <input id="autoSwitch" type="checkbox" checked />
+      <label for="autoSwitch">Cambio Automatico</label>
+    </div>
+
+    <div class="row">
+      <button id="toggleState">Cambiar estado</button>
+    </div>
+
+    <div id="stateText">Estado actual: ojos encendidos</div>
+
+    <div id="help">
+      Teclas: <b>Q/A</b> suben o bajan la dispersión, <b>K</b> cambia el estado,
+      <b>M</b> activa o desactiva el cambio automático.
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    // Interfaz
+    const ui = {
+      dispersion: document.getElementById("dispersion"),
+      threshold: document.getElementById("threshold"),
+      intensity: document.getElementById("intensity"),
+      exposure: document.getElementById("exposure"),
+      switchSpeed: document.getElementById("switchSpeed"),
+      autoSwitch: document.getElementById("autoSwitch"),
+      toggleState: document.getElementById("toggleState"),
+
+      dispersionValue: document.getElementById("dispersionValue"),
+      thresholdValue: document.getElementById("thresholdValue"),
+      intensityValue: document.getElementById("intensityValue"),
+      exposureValue: document.getElementById("exposureValue"),
+      switchSpeedValue: document.getElementById("switchSpeedValue"),
+      stateText: document.getElementById("stateText")
+    };
+
+    // Parametros globales que son manipulables desde la interfaz
+    const params = {
+      dispersion: parseFloat(ui.dispersion.value),
+      threshold: parseFloat(ui.threshold.value),
+      intensity: parseFloat(ui.intensity.value),
+      exposure: parseFloat(ui.exposure.value),
+      switchSpeed: parseFloat(ui.switchSpeed.value),
+      autoSwitch: ui.autoSwitch.checked,
+      manualKnivesOn: false
+    };
+
+    // Actualiza los textos visibles del panel
+    function syncUI() {
+      ui.dispersionValue.textContent = params.dispersion.toFixed(2);
+      ui.thresholdValue.textContent = params.threshold.toFixed(2);
+      ui.intensityValue.textContent = params.intensity.toFixed(2);
+      ui.exposureValue.textContent = params.exposure.toFixed(2);
+      ui.switchSpeedValue.textContent = params.switchSpeed.toFixed(2);
+
+      const label = params.manualKnivesOn ? "cuchillos encendidos" : "ojos encendidos";
+      ui.stateText.textContent = "Estado actual: " + label + (params.autoSwitch ? " (auto)" : " (manual)");
+    }
+
+    ui.dispersion.addEventListener("input", () => {
+      params.dispersion = parseFloat(ui.dispersion.value);
+      syncUI();
+    });
+
+    ui.threshold.addEventListener("input", () => {
+      params.threshold = parseFloat(ui.threshold.value);
+      syncUI();
+    });
+
+    ui.intensity.addEventListener("input", () => {
+      params.intensity = parseFloat(ui.intensity.value);
+      syncUI();
+    });
+
+    ui.exposure.addEventListener("input", () => {
+      params.exposure = parseFloat(ui.exposure.value);
+      syncUI();
+    });
+
+    ui.switchSpeed.addEventListener("input", () => {
+      params.switchSpeed = parseFloat(ui.switchSpeed.value);
+      syncUI();
+    });
+
+    ui.autoSwitch.addEventListener("change", () => {
+      params.autoSwitch = ui.autoSwitch.checked;
+      syncUI();
+    });
+
+    ui.toggleState.addEventListener("click", () => {
+      params.manualKnivesOn = !params.manualKnivesOn;
+      params.autoSwitch = false;
+      ui.autoSwitch.checked = false;
+      syncUI();
+    });
+
+    syncUI();
+
+    // Three.js base
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = params.exposure;
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x07040c);
+
+    // Camara en perspectiva para reforzar la idea de que es una escena en 3D
+    const camera = new THREE.PerspectiveCamera(
+      42,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      100
+    );
+    camera.position.set(0, 0.4, 12.2);
+
+   // Permite orbitar o moverse alrededor del modelo
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.minDistance = 8;
+    controls.maxDistance = 18;
+    controls.target.set(0, 0.0, 0);
+
+    // Luces base de la escena
+    scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+
+    const fillLeft = new THREE.PointLight(0xff58c7, 12, 18, 2);
+    fillLeft.position.set(-5, 3, 5);
+    scene.add(fillLeft);
+
+    const fillRight = new THREE.PointLight(0x62b6ff, 12, 18, 2);
+    fillRight.position.set(5, 2, 5);
+    scene.add(fillRight);
+
+    const rim = new THREE.PointLight(0xffffff, 9, 25, 2);
+    rim.position.set(0, 3, -8);
+    scene.add(rim);
+
+    // Implementacion personalizada del Bloom
+    let sceneTarget;
+    let brightTarget;
+    let blurTargetA;
+    let blurTargetB;
+
+    // Buffers intermedios para usar el bloom por postproceso
+    function createTarget(w, h, withDepth = false) {
+      return new THREE.WebGLRenderTarget(w, h, {
+        type: THREE.HalfFloatType,
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat,
+        depthBuffer: withDepth,
+        stencilBuffer: false
+      });
+    }
+
+    const postScene = new THREE.Scene();
+    const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial());
+    postScene.add(postQuad);
+
+   // Renderiza una pasada fullscreen con un shader correcto
+    function renderFullscreen(material, target = null) {
+      postQuad.material = material;
+      renderer.setRenderTarget(target);
+      renderer.render(postScene, postCamera);
+    }
+   
+    // Vertex Shader sencillo para la pantalla completa
+    const fullscreenVertexShader = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position.xy, 0.0, 1.0);
+      }
+    `;
+
+    // Extrae solo las zonas que son lo suficientemente brillantes
+    const brightFragmentShader = `
+      varying vec2 vUv;
+      uniform sampler2D uScene;
+      uniform float uThreshold;
+
+      void main() {
+        vec3 color = texture2D(uScene, vUv).rgb;
+        float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+        float mask = smoothstep(uThreshold, 1.0, luma);
+        gl_FragColor = vec4(color * mask, 1.0);
+      }
+    `;
+
+    // Blur separable para construir el bloom
+    const blurFragmentShader = `
+      varying vec2 vUv;
+      uniform sampler2D uTexture;
+      uniform vec2 uDirection;
+      uniform vec2 uResolution;
+      uniform float uRadius;
+
+      void main() {
+        vec2 texel = (uDirection / uResolution) * uRadius;
+
+        vec3 result = texture2D(uTexture, vUv).rgb * 0.2270270270;
+        result += texture2D(uTexture, vUv + texel * 1.3846153846).rgb * 0.3162162162;
+        result += texture2D(uTexture, vUv - texel * 1.3846153846).rgb * 0.3162162162;
+        result += texture2D(uTexture, vUv + texel * 3.2307692308).rgb * 0.0702702703;
+        result += texture2D(uTexture, vUv - texel * 3.2307692308).rgb * 0.0702702703;
+
+        gl_FragColor = vec4(result, 1.0);
+      }
+    `;
+
+    // Mezcla la escena base con la textura ya desenfocada del Bloom
+    const combineFragmentShader = `
+      varying vec2 vUv;
+      uniform sampler2D uScene;
+      uniform sampler2D uBloom;
+      uniform float uIntensity;
+
+      void main() {
+        vec3 base = texture2D(uScene, vUv).rgb;
+        vec3 bloom = texture2D(uBloom, vUv).rgb * uIntensity;
+        gl_FragColor = vec4(base + bloom, 1.0);
+      }
+    `;
+
+    const brightMaterial = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVertexShader,
+      fragmentShader: brightFragmentShader,
+      uniforms: {
+        uScene: { value: null },
+        uThreshold: { value: params.threshold }
+      }
+    });
+    brightMaterial.toneMapped = false;
+
+    const blurMaterial = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVertexShader,
+      fragmentShader: blurFragmentShader,
+      uniforms: {
+        uTexture: { value: null },
+        uDirection: { value: new THREE.Vector2(1, 0) },
+        uResolution: { value: new THREE.Vector2(1, 1) },
+        uRadius: { value: params.dispersion }
+      }
+    });
+    blurMaterial.toneMapped = false;
+
+    const combineMaterial = new THREE.ShaderMaterial({
+      vertexShader: fullscreenVertexShader,
+      fragmentShader: combineFragmentShader,
+      uniforms: {
+        uScene: { value: null },
+        uBloom: { value: null },
+        uIntensity: { value: params.intensity }
+      }
+    });
+    combineMaterial.toneMapped = false;
+
+    // Reajusta los buffers cuando cambia el tamaño de la ventana
+    function resizeTargets() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const halfW = Math.max(1, Math.floor(w * 0.5));
+      const halfH = Math.max(1, Math.floor(h * 0.5));
+
+      if (sceneTarget) sceneTarget.dispose();
+      if (brightTarget) brightTarget.dispose();
+      if (blurTargetA) blurTargetA.dispose();
+      if (blurTargetB) blurTargetB.dispose();
+
+      sceneTarget = createTarget(w, h, true);
+      brightTarget = createTarget(halfW, halfH, false);
+      blurTargetA = createTarget(halfW, halfH, false);
+      blurTargetB = createTarget(halfW, halfH, false);
+
+      blurMaterial.uniforms.uResolution.value.set(halfW, halfH);
+    }
+
+    // Pipeline completo de Bloom
+    function renderBloomPipeline() {
+      renderer.setRenderTarget(sceneTarget);
+      renderer.clear();
+      renderer.render(scene, camera);
+
+      brightMaterial.uniforms.uScene.value = sceneTarget.texture;
+      brightMaterial.uniforms.uThreshold.value = params.threshold;
+      renderFullscreen(brightMaterial, brightTarget);
+
+      let inputTexture = brightTarget.texture;
+
+      for (let i = 0; i < 3; i++) {
+        const localRadius = params.dispersion * (1.0 + i * 0.40);
+
+        blurMaterial.uniforms.uTexture.value = inputTexture;
+        blurMaterial.uniforms.uDirection.value.set(1, 0);
+        blurMaterial.uniforms.uRadius.value = localRadius;
+        renderFullscreen(blurMaterial, blurTargetA);
+
+        blurMaterial.uniforms.uTexture.value = blurTargetA.texture;
+        blurMaterial.uniforms.uDirection.value.set(0, 1);
+        blurMaterial.uniforms.uRadius.value = localRadius;
+        renderFullscreen(blurMaterial, blurTargetB);
+
+        inputTexture = blurTargetB.texture;
+      }
+
+      combineMaterial.uniforms.uScene.value = sceneTarget.texture;
+      combineMaterial.uniforms.uBloom.value = blurTargetB.texture;
+      combineMaterial.uniforms.uIntensity.value = params.intensity;
+
+      renderer.setRenderTarget(null);
+      renderFullscreen(combineMaterial, null);
+    }
+
+    // Funciones Auxiliares
+    function neonMaterial(colorHex, intensity = 6.0) {
+      const color = new THREE.Color(colorHex);
+      return new THREE.MeshStandardMaterial({
+        color,
+        emissive: color.clone(),
+        emissiveIntensity: intensity,
+        roughness: 0.12,
+        metalness: 0.0,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+    }
+
+    function whiteFillMaterial() {
+      return new THREE.MeshBasicMaterial({
+        color: 0xf4f8ff,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+    }
+
+    function darkMaterial() {
+      return new THREE.MeshBasicMaterial({
+        color: 0x09040a,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+    }
+
+    function toVec3Points(points2D, z = 0) {
+      return points2D.map(([x, y]) => new THREE.Vector3(x, y, z));
+    }
+
+    // Convierte a una curva 2D en un tubo 3D delgado, que es justo lo que buscamos para este look de neon
+    function makeTube(points2D, material, options = {}) {
+      const {
+        closed = false,
+        radius = 0.07,
+        tubularSegments = 120,
+        radialSegments = 10,
+        z = 0
+      } = options;
+
+      const pts = toVec3Points(points2D, z);
+      let curve;
+
+      if (!closed && pts.length === 2) {
+        curve = new THREE.LineCurve3(pts[0], pts[1]);
+      } else {
+        curve = new THREE.CatmullRomCurve3(pts, closed, "catmullrom", 0.12);
+      }
+
+      const geometry = new THREE.TubeGeometry(
+        curve,
+        tubularSegments,
+        radius,
+        radialSegments,
+        closed
+      );
+
+      return new THREE.Mesh(geometry, material);
+    }
+
+    function ellipsePoints(cx, cy, rx, ry, segments = 48, rotation = 0, start = 0, end = Math.PI * 2) {
+      const points = [];
+      const cosR = Math.cos(rotation);
+      const sinR = Math.sin(rotation);
+
+      for (let i = 0; i < segments; i++) {
+        const t = start + (end - start) * (i / segments);
+        const x = Math.cos(t) * rx;
+        const y = Math.sin(t) * ry;
+
+        const xr = x * cosR - y * sinR;
+        const yr = x * sinR + y * cosR;
+
+        points.push([cx + xr, cy + yr]);
+      }
+
+      return points;
+    }
+
+    function arcPoints(cx, cy, rx, ry, start, end, segments = 24) {
+      const pts = [];
+      for (let i = 0; i <= segments; i++) {
+        const t = start + (end - start) * (i / segments);
+        pts.push([cx + Math.cos(t) * rx, cy + Math.sin(t) * ry]);
+      }
+      return pts;
+    }
+
+    function makeEllipseDisc(cx, cy, rx, ry, material, z = 0.03, rotation = 0) {
+      const mesh = new THREE.Mesh(new THREE.CircleGeometry(1, 48), material);
+      mesh.position.set(cx, cy, z);
+      mesh.scale.set(rx, ry, 1);
+      mesh.rotation.z = rotation;
+      mesh.material.side = THREE.DoubleSide;
+      return mesh;
+    }
+
+    // Poligono relleno que usamos para corregir un error que teniamos con el interior del mango del cuchillo
+    function makeFilledPolygon(points2D, material, z = 0.001) {
+      const shape = new THREE.Shape();
+      shape.moveTo(points2D[0][0], points2D[0][1]);
+
+      for (let i = 1; i < points2D.length; i++) {
+        shape.lineTo(points2D[i][0], points2D[i][1]);
+      }
+
+      shape.closePath();
+
+      const geometry = new THREE.ShapeGeometry(shape);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.z = z;
+      mesh.material.side = THREE.DoubleSide;
+      return mesh;
+    }
+
+    function createToothShape(cx, yTop, yBottom, wTop, wBottom, tilt = 0) {
+      return [
+        [cx - wTop + tilt, yTop],
+        [cx + wTop + tilt, yTop],
+        [cx + wBottom, yBottom],
+        [cx - wBottom, yBottom]
+      ];
+    }
+
+    function roundHeadOutlinePoints(count = 100) {
+      const pts = [];
+      for (let i = 0; i < count; i++) {
+        const a = (i / count) * Math.PI * 2;
+        pts.push([Math.cos(a) * 2.95, Math.sin(a) * 2.78]);
+      }
+      return pts;
+    }
+
+    function monsterHeadOutlinePoints() {
+      return [
+        [-2.55,  0.10],
+        [-2.38,  1.04],
+        [-1.88,  1.86],
+        [-1.28,  2.20],
+        [-0.58,  2.32],
+        [-0.08,  2.06],
+        [ 0.20,  1.88],
+        [ 0.56,  2.12],
+        [ 1.24,  2.26],
+        [ 1.88,  1.92],
+        [ 2.34,  1.02],
+        [ 2.50,  0.12],
+        [ 2.34, -0.96],
+        [ 1.82, -1.88],
+        [ 1.00, -2.38],
+        [ 0.00, -2.54],
+        [-1.04, -2.36],
+        [-1.84, -1.88],
+        [-2.36, -0.98]
+      ];
+    }
+
+    // Crea un cuchillo enterrado en los ojos de Serafin mostrando solamente la parte visible
+    function createBuriedKnife(mainMat, detailMat, eyeType = "oval") {
+      const g = new THREE.Group();
+
+      const bladeVisiblePts = [
+        [-0.18,  0.00],
+        [-0.21,  0.52],
+        [-0.18,  1.16],
+        [-0.10,  1.82],
+        [ 0.00,  2.30],
+        [ 0.10,  1.82],
+        [ 0.18,  1.16],
+        [ 0.21,  0.52],
+        [ 0.18,  0.00]
+      ];
+
+      const handlePts = [
+        [-0.24,  2.24],
+        [-0.20,  3.72],
+        [ 0.28,  3.66],
+        [ 0.24,  2.24]
+      ];
+
+      const handleFillMat = new THREE.MeshBasicMaterial({
+        color: 0xffc447,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2
+      });
+
+      g.add(makeTube(bladeVisiblePts, mainMat, {
+        closed: true,
+        radius: 0.045,
+        tubularSegments: 120,
+        z: 0.00
+      }));
+
+      g.add(makeFilledPolygon(handlePts, handleFillMat, 0.0015));
+
+      g.add(makeTube(handlePts, mainMat, {
+        closed: true,
+        radius: 0.045,
+        tubularSegments: 80,
+        z: 0.00
+      }));
+
+      if (eyeType === "oval") {
+        g.add(makeTube(ellipsePoints(-0.01, 1.24, 0.10, 0.34, 36, 0.0), detailMat, {
+          closed: true,
+          radius: 0.016,
+          tubularSegments: 36,
+          z: 0.014
+        }));
+
+        g.add(makeTube(ellipsePoints(-0.01, 1.20, 0.015, 0.06, 18, 0.0), detailMat, {
+          closed: true,
+          radius: 0.009,
+          tubularSegments: 18,
+          z: 0.015
+        }));
+
+        g.add(makeTube([[-0.08, 1.52], [-0.14, 1.68]], detailMat, {
+          closed: false,
+          radius: 0.008,
+          tubularSegments: 10,
+          z: 0.015
+        }));
+        g.add(makeTube([[0.00, 1.58], [0.00, 1.76]], detailMat, {
+          closed: false,
+          radius: 0.008,
+          tubularSegments: 10,
+          z: 0.015
+        }));
+        g.add(makeTube([[0.08, 1.52], [0.14, 1.68]], detailMat, {
+          closed: false,
+          radius: 0.008,
+          tubularSegments: 10,
+          z: 0.015
+        }));
+      } else {
+        g.add(makeTube(ellipsePoints(0.00, 1.22, 0.16, 0.16, 36, 0.0), detailMat, {
+          closed: true,
+          radius: 0.016,
+          tubularSegments: 36,
+          z: 0.014
+        }));
+
+        g.add(makeTube(ellipsePoints(0.00, 1.22, 0.018, 0.055, 18, 0.0), detailMat, {
+          closed: true,
+          radius: 0.009,
+          tubularSegments: 18,
+          z: 0.015
+        }));
+
+        g.add(makeTube([[-0.10, 1.42], [-0.15, 1.55]], detailMat, {
+          closed: false,
+          radius: 0.008,
+          tubularSegments: 10,
+          z: 0.015
+        }));
+        g.add(makeTube([[0.00, 1.46], [0.00, 1.62]], detailMat, {
+          closed: false,
+          radius: 0.008,
+          tubularSegments: 10,
+          z: 0.015
+        }));
+        g.add(makeTube([[0.10, 1.42], [0.15, 1.55]], detailMat, {
+          closed: false,
+          radius: 0.008,
+          tubularSegments: 10,
+          z: 0.015
+        }));
+      }
+
+      return g;
+    }
+
+    // Construccion de los 2 estados visuales
+    function createNormalFace() {
+      const g = new THREE.Group();
+
+      const headMat = neonMaterial(0xff46c0, 7.3);
+      const eyeOutlineMat = neonMaterial(0xf8fbff, 8.2);
+      const eyeFillMat = whiteFillMaterial();
+      const pupilMat = darkMaterial();
+      const mouthMat = neonMaterial(0xff58b7, 6.3);
+      const teethMat = neonMaterial(0xffe9c7, 5.1);
+
+      g.add(makeTube(roundHeadOutlinePoints(100), headMat, {
+        closed: true,
+        radius: 0.095,
+        tubularSegments: 320,
+        z: 0.00
+      }));
+
+      g.add(makeEllipseDisc(
+        -1.06, 0.78, 0.56, 0.84, eyeFillMat, 0.025, THREE.MathUtils.degToRad(-7)
+      ));
+      g.add(makeTube(
+        ellipsePoints(-1.06, 0.78, 0.62, 0.92, 60, THREE.MathUtils.degToRad(-7)),
+        eyeOutlineMat,
+        { closed: true, radius: 0.080, tubularSegments: 120, z: 0.032 }
+      ));
+      g.add(makeEllipseDisc(
+        -0.92, 0.70, 0.075, 0.110, pupilMat, 0.055, THREE.MathUtils.degToRad(-8)
+      ));
+
+      g.add(makeEllipseDisc(
+        1.00, 0.68, 0.48, 0.60, eyeFillMat, 0.025, THREE.MathUtils.degToRad(8)
+      ));
+      g.add(makeTube(
+        ellipsePoints(1.00, 0.68, 0.55, 0.68, 54, THREE.MathUtils.degToRad(8)),
+        eyeOutlineMat,
+        { closed: true, radius: 0.078, tubularSegments: 110, z: 0.032 }
+      ));
+      g.add(makeEllipseDisc(
+        1.12, 0.60, 0.075, 0.110, pupilMat, 0.055, THREE.MathUtils.degToRad(6)
+      ));
+
+      const mouthPoints = [
+        [-2.08, -0.62],
+        [-1.70, -0.34],
+        [-1.12, -0.18],
+        [-0.32, -0.10],
+        [ 0.52, -0.12],
+        [ 1.25, -0.22],
+        [ 1.82, -0.38],
+        [ 2.08, -0.62],
+        [ 1.78, -0.98],
+        [ 1.10, -1.12],
+        [ 0.18, -1.22],
+        [-0.75, -1.18],
+        [-1.48, -1.02],
+        [-1.98, -0.84]
+      ];
+
+      g.add(makeTube(mouthPoints, mouthMat, {
+        closed: true,
+        radius: 0.075,
+        tubularSegments: 180,
+        z: 0.010
+      }));
+
+      const teeth = [
+        [[-1.62,-0.60],[-1.38,-0.60],[-1.48,-1.14],[-1.72,-0.96]],
+        [[-1.12,-0.56],[-0.74,-0.56],[-0.76,-1.04],[-1.12,-0.98]],
+        [[-0.55,-0.54],[-0.22,-0.54],[-0.22,-0.96],[-0.55,-0.94]],
+        [[-0.05,-0.54],[0.18,-0.54],[0.08,-1.02],[-0.10,-0.96]],
+        [[0.34,-0.56],[0.60,-0.56],[0.48,-1.04],[0.26,-0.96]],
+        [[0.86,-0.56],[1.18,-0.56],[1.14,-1.02],[0.82,-0.94]],
+        [[1.42,-0.60],[1.70,-0.60],[1.66,-1.18],[1.34,-0.96]]
+      ];
+
+      teeth.forEach((shape) => {
+        g.add(makeTube(shape, teethMat, {
+          closed: true,
+          radius: 0.032,
+          tubularSegments: 26,
+          z: 0.018
+        }));
+      });
+
+      return g;
+    }
+
+    function createKnifeFace() {
+      const g = new THREE.Group();
+
+      const headMat = neonMaterial(0xff46c0, 7.3);
+      const moundMat = neonMaterial(0xff46c0, 6.8);
+      const knifeMainMat = neonMaterial(0xffb33a, 7.7);
+      const knifeDetailMat = neonMaterial(0xfff0b8, 8.4);
+      const mouthMat = neonMaterial(0xff58b7, 6.5);
+      const teethMat = neonMaterial(0xffe9c7, 5.2);
+      const tongueMat = neonMaterial(0xff5cf8a, 5.8);
+
+      g.add(makeTube(monsterHeadOutlinePoints(), headMat, {
+        closed: true,
+        radius: 0.095,
+        tubularSegments: 220,
+        z: 0.00
+      }));
+
+      g.add(makeTube(
+        arcPoints(-1.02, 1.10, 0.44, 0.28, Math.PI * 1.05, Math.PI * 1.95, 18),
+        moundMat,
+        { closed: false, radius: 0.050, tubularSegments: 28, z: 0.040 }
+      ));
+      g.add(makeTube(
+        arcPoints(0.98, 1.02, 0.40, 0.26, Math.PI * 1.05, Math.PI * 1.95, 18),
+        moundMat,
+        { closed: false, radius: 0.050, tubularSegments: 28, z: 0.040 }
+      ));
+
+      const leftKnife = createBuriedKnife(knifeMainMat, knifeDetailMat, "oval");
+      leftKnife.position.set(-1.02, 0.84, 0.022);
+      leftKnife.rotation.z = THREE.MathUtils.degToRad(-8);
+      g.add(leftKnife);
+
+      const rightKnife = createBuriedKnife(knifeMainMat, knifeDetailMat, "round");
+      rightKnife.position.set(0.96, 0.74, 0.022);
+      rightKnife.rotation.z = THREE.MathUtils.degToRad(9);
+      g.add(rightKnife);
+
+      const mouthPoints = [
+        [-1.88, -0.88],
+        [-1.42, -0.60],
+        [-0.62, -0.46],
+        [ 0.28, -0.46],
+        [ 1.08, -0.54],
+        [ 1.60, -0.74],
+        [ 1.86, -1.00],
+        [ 1.56, -1.34],
+        [ 0.86, -1.54],
+        [-0.04, -1.60],
+        [-0.90, -1.54],
+        [-1.54, -1.34],
+        [-1.90, -1.06]
+      ];
+
+      g.add(makeTube(mouthPoints, mouthMat, {
+        closed: true,
+        radius: 0.078,
+        tubularSegments: 160,
+        z: 0.014
+      }));
+
+      const monsterTeeth = [
+        createToothShape(-0.96, -0.56, -1.02, 0.12, 0.08, -0.02),
+        createToothShape(-0.38, -0.50, -0.96, 0.12, 0.08,  0.00),
+        createToothShape( 0.20, -0.50, -0.98, 0.12, 0.08,  0.00),
+        createToothShape( 0.82, -0.56, -1.02, 0.12, 0.08,  0.02)
+      ];
+
+      monsterTeeth.forEach((shape) => {
+        g.add(makeTube(shape, teethMat, {
+          closed: true,
+          radius: 0.032,
+          tubularSegments: 26,
+          z: 0.020
+        }));
+      });
+
+      g.add(makeTube(
+        arcPoints(0.00, -1.48, 0.56, 0.28, Math.PI, 0.0, 24),
+        tongueMat,
+        { closed: false, radius: 0.048, tubularSegments: 40, z: 0.018 }
+      ));
+
+      return g;
+    }
+
+    // Configuracion de la escena
+    const root = new THREE.Group();
+    scene.add(root);
+
+    const normalFace = createNormalFace();
+    const knifeFace = createKnifeFace();
+
+    root.add(normalFace);
+    root.add(knifeFace);
+
+normalFace.position.set(0, 0.10, 0);
+knifeFace.position.set(0, 0.10, 0);
+
+knifeFace.visible = false;
+
+    // Estado y Animacion
+    const clock = new THREE.Clock();
+
+    // Va alternando entre la cara normal y la cara con los cuchillos enterrados en los ojos de Serafin
+    function updateState(time) {
+      const knivesOn = params.autoSwitch
+        ? Math.sin(time * params.switchSpeed) < 0.0
+        : params.manualKnivesOn;
+
+      normalFace.visible = !knivesOn;
+      knifeFace.visible = knivesOn;
+
+      params.manualKnivesOn = knivesOn;
+      syncUI();
+    }
+
+    function animate() {
+      const t = clock.getElapsedTime();
+
+      controls.update();
+      renderer.toneMappingExposure = params.exposure;
+
+      // Movimiento suave de la figura (osea Serafin) para que no este completamente estatica
+      root.rotation.y = 0.05 + Math.sin(t * 0.45) * 0.05;
+      root.rotation.x = Math.sin(t * 0.70) * 0.012;
+      root.position.y = Math.sin(t * 1.0) * 0.05;
+
+      fillLeft.position.x = -5 + Math.sin(t * 0.8) * 0.5;
+      fillRight.position.x =  5 + Math.cos(t * 0.7) * 0.5;
+
+      updateState(t);
+      renderBloomPipeline();
+    }
+
+    renderer.setAnimationLoop(animate);
+
+    function onResize() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+      resizeTargets();
+    }
+
+    window.addEventListener("resize", onResize);
+
+    
+    // Controles del teclado
+    window.addEventListener("keydown", (e) => {
+      const key = e.key.toLowerCase();
+
+      if (key === "q") {
+        params.dispersion = Math.min(5.5, params.dispersion + 0.10);
+        ui.dispersion.value = params.dispersion;
+      }
+
+      if (key === "a") {
+        params.dispersion = Math.max(0.3, params.dispersion - 0.10);
+        ui.dispersion.value = params.dispersion;
+      }
+
+      if (key === "k") {
+        params.manualKnivesOn = !params.manualKnivesOn;
+        params.autoSwitch = false;
+        ui.autoSwitch.checked = false;
+      }
+
+      if (key === "m") {
+        params.autoSwitch = !params.autoSwitch;
+        ui.autoSwitch.checked = params.autoSwitch;
+      }
+
+      syncUI();
+    });
+
+    onResize();
+    syncUI();
+  </script>
+</body>
+</html>
