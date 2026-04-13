@@ -32,16 +32,19 @@ Integrantes:
 - M: Con esta tecla activas o desactivas el cambio automático. 
 ### Panel lateral izquierdo:
    Usa controles en tiempo real para ajustar los parámetros del efecto. Además, los cambios se aplican al toque sin tener que reiniciar la escena. 
+   
    También tiene:
 - Un checkbox para activar o desactivar el cambio automático.
 - Un botón para cambiar manualmente entre su versión normal y su versión con cuchillos
 ## Efecto implementado — Bloom:
    El efecto que elegimos para este Shaders 3 fue Bloom, que básicamente simula la dispersión de la luz en superficies brillantes, generando halos alrededor de las zonas luminosas. En este caso lo usamos para dar la apariencia de tubos de neón encendidos. 
+   
    La implementación funciona en varias etapas:
 - Primero se renderiza la escena normal.
 - Luego se extraen solo las zonas suficientemente brillantes.
 - Después esas zonas pasan por un desenfoque.
 - Al final se mezclan de nuevo con la imagen base para crear el halo luminoso.
+
    Esto permite controlar el efecto de forma bastante visual y en tiempo real. 
 ## Parámetros ajustables:
 ### Dispersión:
@@ -88,4 +91,5 @@ Integrantes:
 - Controles de teclado: En esta parte se programan las teclas que permiten modificar la dispersión y cambiar manual o automáticamente entre estados.
 ## Comentario final:
    En este trabajo quisimos hacer algo visualmente llamativo pero conservando una estructura simple. La idea era combinar una figura hecha con líneas de neón con un efecto bloom que realmente se sintiera como luz expandiéndose.
-   También traté de que la escena fuera fácil de probar y modificar en tiempo real, para que se pudiera ver claramente cómo cambia el efecto según los parámetros, además quería recuperar parte de la idea original que pensaba hacer con Serafín en Blender y en vista de que ya no lo íbamos a usar quise hacer algo mínimamente parecido en este último shaders.
+   
+   También tratamos de que la escena fuera fácil de probar y modificar en tiempo real, para que se pudiera ver claramente cómo cambia el efecto según los parámetros, además queríamos recuperar parte de la idea original que pensabamos hacer con Serafín en Blender y en vista de que ya no lo íbamos a usar quisimos hacer algo mínimamente parecido en este último shaders.
