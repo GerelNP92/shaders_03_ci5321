@@ -18,7 +18,6 @@ Integrantes:
 ## Requisitos mínimos:
 - El navegador debe soportar WebGL.
 - Debes tener conexión a internet al abrir el archivo, porque el proyecto usa Three.js cargado desde CDN. 
-
    Si la pantalla sale negra o el efecto no aparece, debes revisar que revisar que WebGL esté habilitado en el navegador, pero normalmente ya viene activado por defecto.
 ## Controles generales:
 ### Cámara:
@@ -31,15 +30,15 @@ Integrantes:
 ### Panel lateral izquierdo:
    Usa controles en tiempo real para ajustar los parámetros del efecto. Además, los cambios se aplican al toque sin tener que reiniciar la escena. 
    También tiene:
-Un checkbox para activar o desactivar el cambio automático.
-Un botón para cambiar manualmente entre su versión normal y su versión con cuchillos
+- Un checkbox para activar o desactivar el cambio automático.
+- Un botón para cambiar manualmente entre su versión normal y su versión con cuchillos
 ## Efecto implementado — Bloom:
    El efecto que elegimos para este Shaders 3 fue Bloom, que básicamente simula la dispersión de la luz en superficies brillantes, generando halos alrededor de las zonas luminosas. En este caso lo usamos para dar la apariencia de tubos de neón encendidos. 
    La implementación funciona en varias etapas:
-Primero se renderiza la escena normal.
-Luego se extraen solo las zonas suficientemente brillantes.
-Después esas zonas pasan por un desenfoque.
-Al final se mezclan de nuevo con la imagen base para crear el halo luminoso.
+- Primero se renderiza la escena normal.
+- Luego se extraen solo las zonas suficientemente brillantes.
+- Después esas zonas pasan por un desenfoque.
+- Al final se mezclan de nuevo con la imagen base para crear el halo luminoso.
    Esto permite controlar el efecto de forma bastante visual y en tiempo real. 
 ## Parámetros ajustables:
 ### Dispersión:
@@ -59,31 +58,31 @@ Al final se mezclan de nuevo con la imagen base para crear el halo luminoso.
 ### Estado 2 — Cuchillos enterrados:
    Los ojos desaparecen y aparecen cuchillos en su lugar, como si estuvieran enterrados en la plastilina. Los cuchillos también tienen ojos dibujados encima, siguiendo la idea del personaje que ya esta explicada en propio archivo .html. 
 ## Técnicas usadas:
-Three.js para construir la escena en 3D.
-ShaderMaterial para el postproceso del bloom.
-Fragment shaders para la:
-Extracción de brillo.
-Blur separable.
-Composición final.
-PerspectiveCamera para reforzar la sensación de profundidad.
-OrbitControls para inspeccionar la figura desde varios ángulos.
-TubeGeometry, CircleGeometry, ShapeGeometry y otras geometrías para construir la figura y sus detalles.
+- Three.js para construir la escena en 3D.
+- ShaderMaterial para el postproceso del bloom.
+- Fragment shaders para la:
+  a. Extracción de brillo.
+  b. Blur separable.
+  c. Composición final.
+- PerspectiveCamera para reforzar la sensación de profundidad.
+- OrbitControls para inspeccionar la figura desde varios ángulos.
+- TubeGeometry, CircleGeometry, ShapeGeometry y otras geometrías para construir la figura y sus detalles.
 ## Detalles técnicos:
-Tecnología: WebGL con Three.js
-Versión usada: Three.js desde CDN (0.161.0)
-Shaders: Vertex shader de pantalla completa + fragment shaders para las distintas pasadas del bloom.
-Escena: Hecha con objetos 3D
-Postproceso: Render targets intermedios para el brillo, blur y la mezcla final 
+- Tecnología: WebGL con Three.js
+- Versión usada: Three.js desde CDN (0.161.0)
+- Shaders: Vertex shader de pantalla completa + fragment shaders para las distintas pasadas del bloom.
+- Escena: Hecha con objetos 3D
+- Postproceso: Render targets intermedios para el brillo, blur y la mezcla final 
 ## Organización del código:
    El código está dividido en varias partes para que sea más fácil de seguir:
-Interfaz: Aquí básicamente se define el panel visual con los sliders, botones, textos y eventos que permiten cambiar los parámetros en tiempos real.
-Configuración base de Three.js: En esta parte se crea el renderer, la escena, la cámara y los controles de orbita para poder ver la figura en 3D.
-Implementación del bloom: Aquí está todo lo relacionado con el efecto principal del proyecto, incluyendo los render targets, los shaders y la mezcla final del bloom con la escena.
-Funciones auxiliares: Contiene funciones reutilizables para crear materiales, curvas, tubos, elipses, polígonos y otras piezas necesarias para construir la figura.
-Construcción de los dos estados visuales: Acá se crean las 2 versiones de Serafin, una normal con los ojos visibles y otra con los cuchillos enterrados.
-Configuración de la escena: Aquí se añaden los objetos principales del proyecto a la escena en sí y se organiza la jerarquía general de la figura.
-Estado y animación: Es la que se encarga de alternar entre los 2 estados visuales y de aplicarle el movimiento suave a la figura durante la ejecución.
-Controles de teclado: En esta parte se programan las teclas que permiten modificar la dispersión y cambiar manual o automáticamente entre estados.
+- Interfaz: Aquí básicamente se define el panel visual con los sliders, botones, textos y eventos que permiten cambiar los parámetros en tiempos real.
+- Configuración base de Three.js: En esta parte se crea el renderer, la escena, la cámara y los controles de orbita para poder ver la figura en 3D.
+- Implementación del bloom: Aquí está todo lo relacionado con el efecto principal del proyecto, incluyendo los render targets, los shaders y la mezcla final del bloom con la escena.
+- Funciones auxiliares: Contiene funciones reutilizables para crear materiales, curvas, tubos, elipses, polígonos y otras piezas necesarias para construir la figura.
+- Construcción de los dos estados visuales: Acá se crean las 2 versiones de Serafin, una normal con los ojos visibles y otra con los cuchillos enterrados.
+- Configuración de la escena: Aquí se añaden los objetos principales del proyecto a la escena en sí y se organiza la jerarquía general de la figura.
+- Estado y animación: Es la que se encarga de alternar entre los 2 estados visuales y de aplicarle el movimiento suave a la figura durante la ejecución.
+- Controles de teclado: En esta parte se programan las teclas que permiten modificar la dispersión y cambiar manual o automáticamente entre estados.
 ## Comentario final:
    En este trabajo quisimos hacer algo visualmente llamativo pero conservando una estructura simple. La idea era combinar una figura hecha con líneas de neón con un efecto bloom que realmente se sintiera como luz expandiéndose.
    También traté de que la escena fuera fácil de probar y modificar en tiempo real, para que se pudiera ver claramente cómo cambia el efecto según los parámetros, además quería recuperar parte de la idea original que pensaba hacer con Serafín en Blender y en vista de que ya no lo íbamos a usar quise hacer algo mínimamente parecido en este último shaders.
