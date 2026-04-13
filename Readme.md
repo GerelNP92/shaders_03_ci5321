@@ -18,6 +18,7 @@ Integrantes:
 ## Requisitos mínimos:
 - El navegador debe soportar WebGL.
 - Debes tener conexión a internet al abrir el archivo, porque el proyecto usa Three.js cargado desde CDN.
+
   Si la pantalla sale negra o el efecto no aparece, debes revisar que revisar que WebGL esté habilitado en el navegador, pero normalmente ya viene activado por defecto.
 ## Controles generales:
 ### Cámara:
