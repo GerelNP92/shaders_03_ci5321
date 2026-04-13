@@ -61,9 +61,9 @@ Integrantes:
 - Three.js para construir la escena en 3D.
 - ShaderMaterial para el postproceso del bloom.
 - Fragment shaders para la:
-  a. Extracción de brillo.
-  b. Blur separable.
-  c. Composición final.
+    - Extracción de brillo.
+    - Blur separable.
+    - Composición final.
 - PerspectiveCamera para reforzar la sensación de profundidad.
 - OrbitControls para inspeccionar la figura desde varios ángulos.
 - TubeGeometry, CircleGeometry, ShapeGeometry y otras geometrías para construir la figura y sus detalles.
