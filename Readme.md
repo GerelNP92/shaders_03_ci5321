@@ -7,7 +7,9 @@ Integrantes:
 - Gabriel Orejarena (18-10292)  
 ## Descripción:
    Este proyecto consiste básicamente en la implementación del efecto Bloom en una escena 3D hecha con Three.js y shaders personalizados.
+   
    La escena en si muestra a Serafín, que es un personaje de plastilina representado con estilo de luces de neón. La idea era simular un letrero luminoso sobre un fondo oscuro para que el bloom resaltara mejor. El personaje tiene 2 estados: uno normal con los ojos encendidos y otro en el que aparecen cuchillos enterrados en los ojos. Todo el efecto visual fue hecho para que parezca un anuncio de neón como los que se ven en las tiendas. 
+   
    Además del efecto principal, se pueden modificar varios parámetros en tiempo real para cambiar la apariencia visual de la escena. El parámetro principal del laboratorio para este efecto es la dispersión, pero también se añadieron otros controles complementarios para hacer la presentación más clara y más visual. 
 ## Cómo correr el proyecto:
    El proyecto tiene un único archivo HTML y no necesita instalación, pero sí necesita que tengas acceso a internet para cargar Three.js desde CDN. 
